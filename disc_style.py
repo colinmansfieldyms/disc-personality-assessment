@@ -337,7 +337,7 @@ def create_pdf_report(normalized_score, relative_percentages, fig, style_descrip
     story.append(Paragraph(f"Date: {timestamp}", styles["BodyTextCenter"]))
     if participant_name:
         story.append(Paragraph(f"Name: {participant_name}", styles["BodyTextCenter"]))
-
+        
     story.append(Spacer(1, 12))
     story.append(Paragraph("Overall Summary", styles["Heading2Center"]))
     story.append(Spacer(1, 10))
