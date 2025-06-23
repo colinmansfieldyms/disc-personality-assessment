@@ -337,14 +337,41 @@ def create_pdf_report(normalized_score, relative_percentages, fig, style_descrip
     story.append(Paragraph(f"Date: {timestamp}", styles["BodyTextCenter"]))
     if participant_name:
         story.append(Paragraph(f"Name: {participant_name}", styles["BodyTextCenter"]))
-    story.append(PageBreak())
-
-    # Leadership Summary page
-    story.append(Paragraph("Leadership Summary", styles["Heading2Center"]))
+        
+    story.append(Spacer(1, 12))
+    story.append(Paragraph("Overall Summary", styles["Heading2Center"]))
     story.append(Spacer(1, 10))
     sorted_styles = sorted(normalized_score.items(), key=lambda x: x[1], reverse=True)
     dominant_style = sorted_styles[0][0]
     runner_up_style = sorted_styles[1][0]
+    dominant_score = sorted_styles[0][1]
+    runner_up_score = sorted_styles[1][1]
+    story.append(
+        Paragraph(
+            f"Your dominant style is <b>{dominant_style}</b> ({dominant_score:.1f}%) followed by "
+            f"<b>{runner_up_style}</b> ({runner_up_score:.1f}%).",
+            styles["Justify"],
+        )
+    )
+
+    # Bar chart summary
+    bar_fig, ax = plt.subplots(figsize=(4, 3))
+    categories = ["D", "I", "S", "C"]
+    colors_map = {"D": "red", "I": "blue", "S": "yellow", "C": "green"}
+    scores = [normalized_score[c] for c in categories]
+    ax.bar(categories, scores, color=[colors_map[c] for c in categories])
+    ax.set_ylim(0, 100)
+    ax.set_yticks(range(10, 101, 10))
+    ax.set_ylabel("Score (%)")
+    ax.grid(axis="y", linestyle="--", alpha=0.5)
+    bar_buf = BytesIO()
+    bar_fig.tight_layout()
+    bar_fig.savefig(bar_buf, format="png", dpi=300)
+    plt.close(bar_fig)
+    bar_buf.seek(0)
+    story.append(Image(bar_buf, width=300, height=225))
+    story.append(Spacer(1, 10))
+
     friction_map = {
         ("D", "S"): "Directness vs. patience",
         ("D", "C"): "Speed vs. accuracy",
@@ -357,12 +384,14 @@ def create_pdf_report(normalized_score, relative_percentages, fig, style_descrip
         ("I", "C"): "Combine I creativity with C detail.",
         ("I", "S"): "Balance I energy with S reliability.",
     }
-    friction = friction_map.get((dominant_style, runner_up_style),
-                                friction_map.get((runner_up_style, dominant_style),
-                                                "Different approaches may cause tension."))
-    action = action_map.get((dominant_style, runner_up_style),
-                            action_map.get((runner_up_style, dominant_style),
-                                           f"Pair {dominant_style} with {runner_up_style} for balance."))
+    friction = friction_map.get(
+        (dominant_style, runner_up_style),
+        friction_map.get((runner_up_style, dominant_style), "Different approaches may cause tension."),
+    )
+    action = action_map.get(
+        (dominant_style, runner_up_style),
+        action_map.get((runner_up_style, dominant_style), f"Pair {dominant_style} with {runner_up_style} for balance."),
+    )
     data = [
         ["Dominant Style", dominant_style],
         ["Runner-Up Style", runner_up_style],
@@ -370,10 +399,12 @@ def create_pdf_report(normalized_score, relative_percentages, fig, style_descrip
         ["Recommended Action", action],
     ]
     summary_table = Table(data, hAlign='LEFT', colWidths=[140, 330])
-    summary_table.setStyle(TableStyle([
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-    ]))
+    summary_table.setStyle(
+        TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ])
+    )
     story.append(summary_table)
     story.append(PageBreak())
 
@@ -497,9 +528,15 @@ def create_pdf_report(normalized_score, relative_percentages, fig, style_descrip
     story.append(Spacer(1, 10))
 
     # Friction Matrix appendix
-    story.append(PageBreak())
     story.append(Paragraph("Friction Matrix", styles["Heading2Center"]))
     story.append(Spacer(1, 10))
+    story.append(
+        Paragraph(
+            "This matrix highlights where DISC styles may clash. Emojis indicate the level of potential friction:",
+            styles["Justify"],
+        )
+    )
+    story.append(Spacer(1, 5))
     friction_scores = {
         ("D", "S"): 3,
         ("I", "C"): 2,
@@ -510,7 +547,8 @@ def create_pdf_report(normalized_score, relative_percentages, fig, style_descrip
         row = [s1]
         for s2 in order:
             val = friction_scores.get((s1, s2), friction_scores.get((s2, s1), 1))
-            row.append(val)
+            emoji_map = {1: "🙂", 2: "⚠️", 3: "🔥"}
+            row.append(emoji_map.get(val, "🙂"))
         matrix_data.append(row)
     matrix = Table(matrix_data, hAlign='LEFT', colWidths=[60, 60, 60, 60, 60])
     matrix.setStyle(TableStyle([
