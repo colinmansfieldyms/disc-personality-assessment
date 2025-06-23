@@ -689,6 +689,9 @@ if st.session_state.started:
             st.session_state.pop("answers")
             st.session_state.pop("show_results")
             st.session_state.pop("questions")
+            # Reset main flow flags so the introduction page shows again
+            st.session_state.started = False
+            st.session_state.submitted = False
             st.rerun()
 
 
