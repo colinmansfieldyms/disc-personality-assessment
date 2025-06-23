@@ -2,6 +2,8 @@
 
 These instructions apply to all files in this repository.
 
+Ignore streangths.json - this is currently unused. You do not need to read or edit this file.
+
 ## Formatting
 * Use 4 spaces for indentation in Python files.
 * Limit lines to 120 characters when practical.
